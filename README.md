@@ -303,3 +303,33 @@ impl Rectangle {
     }
 }
 ```
+
+## [Chapter 07.2](https://doc.rust-lang.org/stable/book/ch07-02-defining-modules-to-control-scope-and-privacy.html)
+[Modules cheat sheet](https://doc.rust-lang.org/stable/book/ch07-02-defining-modules-to-control-scope-and-privacy.html#modules-cheat-sheet)
+
+
+## [Chapter 07.4](https://doc.rust-lang.org/stable/book/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html)
+For functions, specify `use` paths up to the parent to show the function isn't defined in scope:
+``` rust
+use crate::some::path;
+
+path::some_func();
+```
+
+For structs, enums, and other items, specify the full `use` path:
+``` rust
+use crate::some::path::SomeType;
+
+let a = SomeType::new();
+```
+
+Exception to above would be if two items are named the same:
+``` rust
+use std::fmt::Result;
+use std::io::Result; // <-- This is invalid
+```
+
+Shared `use` paths that include a module and it's child can be declared with `self`:
+``` rust
+use std::io::{self, Write};
+```
