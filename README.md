@@ -333,3 +333,157 @@ Shared `use` paths that include a module and it's child can be declared with `se
 ``` rust
 use std::io::{self, Write};
 ```
+
+## [Chapter 08.1](https://doc.rust-lang.org/stable/book/ch08-01-vectors.html)
+Vectors can be initialized with empty:
+``` rust
+let v: Vector<i32> = Vector::new();
+```
+
+Vectors can be initialized with a shorthand for known values:
+``` rust
+let v = vec![1, 2, 3];
+```
+
+Add elements to a vector with push:
+``` rust
+let mut v: Vector<i32> = Vector::new();
+
+v.push(5);
+```
+
+Accessing elements can be done via indexing or `.get` method:
+``` rust
+let third: &i32 = &v[2];
+
+let third: Option<&i32> = v.get(2);
+```
+
+Borrow rules apply with mutable/immutable access to array:
+``` rust
+let first = &v[0];
+
+v.push(6); // <-- this is invlaid
+
+println!("The first element is: {first}");
+```
+
+Iterate with for:
+``` rust
+for i in &v {
+    println!("{i}");
+}
+```
+
+Iteration can be mutable:
+``` rust
+for i in &mut v {
+    *i += 50;
+}
+```
+
+## [Chapter 08.2](https://doc.rust-lang.org/stable/book/ch08-02-strings.html)
+Append to string without taking ownership:
+``` rust
+let mut s1 = String::from("foo");
+let s2 = "bar";
+s1.push_str(s2);
+println!("s2 is {s2}");
+```
+
+`push` takes a single character and adds it to the string:
+``` rust
+let mut s = String::from("Hell");
+s.push('o');
+```
+
+Using `+` moves first element:
+``` rust
+let s1 = String::from("Hello, ");
+let s2 = String::from("world!");
+
+let s3 = s1 + &s2; // <-- s1 was moved and is no longer accesible
+
+println!("{s3}");
+```
+
+`&String` values get coerced when passed to methods expecting `&str`:
+``` rust
+fn add(self, s: &str) -> String {}
+
+s1.add(&s2)
+s1.add(&s2[..]) // The same as
+```
+
+For more complicated concatenation, use `format!`, (doesn't take ownership of parameters):
+``` rust
+format!("{s1}-{s2}-{s3}");
+```
+
+Be specific about bytes or chars when accessing strings:
+``` rust
+let hello = "Здравствуйте";
+
+let c = hello[1]; // <-- this is invalid
+
+let s = &hello[0..4]; // Зд
+
+for c in "Зд".chars() {
+    println!("{c}");
+}
+// З, д
+
+for b in "Зд".bytes() {
+    println!("{b}");
+}
+// 208, 151, 208, 180
+```
+
+Grapheme clusters from strings are difficult and not a part of the standard library. Available on crates.io if needed.
+
+## [Chapter 08.3](https://doc.rust-lang.org/stable/book/ch08-03-hash-maps.html)
+Iterate over hash maps with for:
+``` rust
+for (key, value) in &some_map {
+    println!("{key}: {value}");
+}
+```
+
+Copy values are copied, ownef values are moved:
+``` rust
+let name = String::from("Favourite color");
+let value = String::from("Blue");
+
+let mut map = HashMap::new();
+map.insert(name, value);
+
+// name, value are invalid at this point
+```
+
+References inserted into map must be valid for lifetime of map:
+``` rust
+let mut map = HashMap::new();
+
+{
+    let value = String::from("Blue");
+
+    map.insert(1, value); // <-- this is invalid
+}
+```
+
+Add values optionally if doesn't already exist:
+``` rust
+map.entry(String::from("Blue")).or_insert(50);
+```
+
+Update existing value in map:
+``` rust
+let text = "Hello world wonderful world";
+
+let mut map = HashMap::new();
+
+for word in text.split_whitespace() {
+    let count = map.entry(word).or_insert(0);
+    *count += 1;
+}
+```
