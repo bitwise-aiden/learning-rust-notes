@@ -680,3 +680,199 @@ Blanket implement trait:
 ``` rust
 impl <T: Display> ToString for T {}
 ```
+
+## [Chapter 11.1](https://doc.rust-lang.org/stable/book/ch11-01-writing-tests.html)
+Define a test function:
+``` rust
+#[test]
+fn some_test() {}
+```
+
+Run tests:
+``` sh
+cargo test
+```
+
+A test fails if something panics:
+``` rust
+#[test]
+fn some_test() {
+    panic!("This test fails");
+}
+```
+
+Some helpful macros are:
+``` rust
+assert!
+assert_eq!
+assert_ne!
+```
+
+For equality checks, need to derive traits:
+``` rust
+#[derive(PartialEq, Debug)]
+```
+
+Assert methods allow for formatted messages:
+```rust
+assert!(false, "It seems the value wasn't true, value: `{}`.", false);
+```
+
+Validate that a code path should panic with:
+``` rust
+#[test]
+#[should_panic]
+fn this_should_panic() {
+    panic!("It does indeed panic!");
+}
+```
+
+More specific should panic with:
+``` rust
+#[test]
+#[should_panic(expected = "It does indeed panic!")]
+fn this_should_panic() {
+    panic!("It does indeed panic!");
+}
+```
+
+Tests can use results:
+``` rust
+#[test]
+fn using_results() -> Result<(), String> {
+    if 2 + 2 == 4 {
+        Ok(())
+    } else {
+        Err(String::from("two plus two does not equal four"))
+    }
+}
+```
+
+Results tests can use `?`:
+``` rust
+#[test]
+fn using_results<T, E>() -> Result<T, E> {
+    some_function_returning_result()?
+}
+```
+
+Testing a failed result needs explcit assert:
+``` rust
+#[test]
+fn using_results() {
+    let result = some_function_returning_result();
+
+    assert!(result.is_err());
+}
+```
+
+## [Chapter 11.2](https://doc.rust-lang.org/stable/book/ch11-02-running-tests.html)
+Cargo test takes args, but can also pass args to the binary with `--`:
+``` sh
+cargo test -- --help
+```
+
+Set number of threads:
+``` sh
+cargo test -- --test-threads=1
+```
+
+Show output:
+``` sh
+cargo test -- --show-output
+```
+
+Run a single test:
+``` sh
+cargo test name_of_test
+```
+
+Run a filtered set of tests:
+``` sh
+cargo test any_test_with_this_in_the_name
+```
+
+Ignore specific tests:
+``` rust
+#[test]
+#[ignore]
+fn long_running_test {}
+```
+
+Run only ignored tests:
+``` sh
+cargo test -- --ignored
+```
+
+Run all including ignored tests:
+``` sh
+cargo test -- --include-ignored
+```
+
+## [Chapter 11.3](https://doc.rust-lang.org/stable/book/ch11-03-test-organization.html)
+Convention to put unit tests with code in same file:
+``` rust
+// some_file.rs
+
+pub fn add_two(value: i32) -> i32 {
+    internal_adder(value, 2)
+}
+
+fn internal_adder(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn adds_two() -> {
+        assert_eq!(4, add_two(2));
+    }
+
+    #[test]
+    fn test_internal_method() -> {
+        assert_eq!(4, internal_adder(2, 2));
+    }
+}
+```
+
+Only compile tests if using `cargo test`:
+``` rust
+#[cfg(test)]
+mod tests {}
+```
+
+Integration tests have own top level directory:
+``` sh
+project
+├── Cargo.lock
+├── Cargo.toml
+├── src
+│   └── lib.rs
+└── tests
+    └── integration_test.rs
+```
+
+Each file in integration tests is a separate crate and needs to import directly:
+``` rust
+use adder;
+
+#[test]
+fn it_adds_two() {
+    assert_eq!(4, adder::add_two(2));
+}
+```
+
+To avoid unnecessary logging, when using shared code for integraition tests, use the old style of defining the module:
+``` sh
+tests/common/mod.rs
+```
+
+To include shared code for integration tests:
+``` sh
+mod common;
+```
+
+Integration tests can't use from `src/main.rs`, further showing the importance of a basic main with all logic living in `src/lib.rs`.
