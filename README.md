@@ -487,3 +487,89 @@ for word in text.split_whitespace() {
     *count += 1;
 }
 ```
+
+## [Chapter 09.1](https://doc.rust-lang.org/stable/book/ch09-01-unrecoverable-errors-with-panic.html)
+
+To have your program not unwind on panic use:
+``` toml
+# Cargo.toml
+
+[profile.release]
+panic = 'abort'
+```
+
+Halt program when in an unrecoverable state:
+``` rust
+fn main() {
+    panic!("Crash and burn!");
+}
+```
+
+To see backtrace on panic:
+``` sh
+RUST_BACKTRACE=1 cargo run
+```
+
+## [Chapter 09.2](https://doc.rust-lang.org/stable/book/ch09-02-recoverable-errors-with-result.html)
+Use `unwrap` to get value from result (will panic if error):
+``` rust
+let text = File::Open("hello.txt").unwrap();
+```
+
+Use `except` to get value from result with own error message:
+``` rust
+let text = File::Open("hello.txt").except("hello.txt should be present");
+```
+
+Use `?` to propagate errors (calls from to transform error to return type):
+``` rust
+fn read_username_from_file() -> Result<String, MyErrorType> {
+    let mut username_file = File::open("hello.txt")?;
+    let mut username = String::new();
+
+    username_file.read_to_string(&mut username)?;
+
+    Ok(username)
+}
+```
+
+`?` calls can be chained together:
+``` rust
+fn read_username_from_file() -> Result<String, MyErrorType> {
+    let mut username = String::new();
+
+    File::open("hello.txt")?.read_to_string(&mut username)?;
+
+    Ok(username)
+}
+```
+
+Common functionality can be found in standard library:
+``` rust
+fn read_username_from_file() -> Result<String, io::Error> {
+    std::fs::read_to_string("hello.txt")
+}
+```
+
+`?` can be used for `Option<T>` returns as well:
+``` rust
+fn last_char_of_first_line(text: &str) -> Option<char> {
+    text.lines().next()?.chars().last()
+}
+```
+
+Mixing Option / Result can't be done implicitly, but can with `.ok` and `.ok_or`:
+``` rust
+fn read_username_from_file() -> Option<String> {
+    std::fs::read_to_string("hello.txt").ok()
+}
+```
+
+To use `?` in main:
+``` rust
+fn main() -> Result<(), Box<dyn Error>> {
+    let greeting_file = File::Open("hello.txt")?;
+
+    Ok(())
+}
+```
