@@ -573,3 +573,110 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+
+## [Chapter 10.2](https://doc.rust-lang.org/stable/book/ch10-02-traits.html)
+Define a trait:
+``` rust
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+
+Implement a trait:
+``` rust
+pub struct Article {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for Article {
+    fn summarize(&self) -> String {
+        format!("{}, by {} ({})", self.headline, self.author, self.location)
+    }
+}
+```
+
+Must bring type and trait into scope to use:
+``` rust
+use aggregator::{Summary, Article};
+```
+
+Trait or type must be local to crate to implement:
+``` rust
+impl Display on Vec<T> {} // <-- this is invalid
+```
+
+Default behavior can be defined for a trait:
+``` rust
+pub trait Summary {
+    fn summarize(&self) -> String {
+        String::from("(Read more...)");
+    }
+}
+```
+
+To implement a default trait:
+``` rust
+impl Summary for Article {}
+```
+
+To use a trait for a function:
+``` rust
+pub fn notify(item: &impl Summary) {} // Single trait
+pub fn notify(item: &(impl Summary + Display)) {} // Multiple traits
+```
+
+To use as trait bound for a function:
+``` rust
+pub fn notify<T: Summary>(item: &T) {} // Single trait
+pub fn notify<T: Summary + Display>(item: &T) {} // Multiple Traits
+```
+
+Alternate trait binding syntax, helpful for long trait lists:
+``` rust
+fn some_function<T, U>(t: &T, u: &U) -> i32
+where
+    T: Display + Clone,
+    U: Clone + Debug,
+{}
+```
+
+Returning types that implement traits:
+``` rust
+fn returns_summarizable() -> impl Summary {}
+```
+
+Can't use trait return for functions returning different types:
+``` rust
+fn returns_summarizable(switch: bool) -> impl Summary {
+    if switch {
+        SummaryTypeA {}
+    } else {
+        SummaryTypeB {}
+    }
+}
+```
+
+Conditionally implement on traits:
+``` rust
+
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+impl<T> Pair<T> {
+    fn new(x: T, y: T) -> Self {}
+}
+
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&self) {}
+}
+```
+
+Blanket implement trait:
+``` rust
+impl <T: Display> ToString for T {}
+```
