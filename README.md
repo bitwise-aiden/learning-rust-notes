@@ -1122,3 +1122,112 @@ cargo install ripgrep
 ```
 
 Can only install packages with binary targets.
+
+## [Chapter 15.1](https://doc.rust-lang.org/stable/book/ch15-01-box.html)
+Use `Box<T>` to store data on the head:
+``` rust
+let b = Box::new(5);
+println!("b = {}", b);
+```
+
+Boxes provide indirection and heap allocation.
+
+## [Chapter 15.2](https://doc.rust-lang.org/stable/book/ch15-02-deref.html)
+Exploring deref with `MyBox` implementation:
+``` rust
+use std::ops::Deref;
+
+struct MyBox<T>(T);
+
+impl<T> MyBox<T> {
+    fn new(x: T) -> MyBox<T> {
+        MyBox(x)
+    }
+}
+
+impl<T> Deref for MyBox<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+fn main() {
+    let x = 6;
+    let y = MyBox::new(x);
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+}
+```
+
+Implementing deref means:
+``` rust
+*(y.deref()) == *y
+```
+
+`.deref` returns a reference to prevent a move from occuring.
+
+Deref coercion converts a reference to a type that implements the Deref trait into a reference type of another type. E.g. &String to &str:
+``` rust
+fn hello(name: &str) {
+    println!("Hello, {name}!");
+}
+
+fn main() {
+    let m = MyBox::new(String::from("Rust"));
+    hello(&m);
+}
+```
+
+Without deref coercion:
+``` rust
+fn main() {
+    let m = MyBox::new(String::from("Rust"));
+    hello(&(*m)[..]);
+}
+```
+
+Rust does deref coercion when:
+- From `&T` to `&U` when `T: Deref<Target=U>`
+- From `&mut T` to `&mut U` when `T: DerefMut<Target=U>`
+- From `&mut T` to `&U` when `T: Deref<Target=U>`
+
+## [Chapter 15.3](https://doc.rust-lang.org/stable/book/ch15-03-drop.html)
+To drop manually use `std::mem::drop`:
+``` rust
+fn main() {
+    let c = CustomTypeWithDrop {};
+    drop(c);
+}
+```
+
+## [Chapter 15.4](https://doc.rust-lang.org/stable/book/ch15-04-rc.html)
+Use `Rc<T>` to share ownership reference to an item:
+``` rust
+use std::rc::Rc;
+
+fn main() {
+    let a = Rc::new(5);
+    let b = Rc::clone(&a);
+}
+```
+
+`Rc::clone` doesn't do a deep copy, it just increments a reference count, thus use it over `a.clone()` for clarity.
+
+Use `Rc::strong_count` to view the current reference count of an item.
+
+`Rc<T>` is for immutable reference only.
+
+## [Chapter 15.5](https://doc.rust-lang.org/stable/book/ch15-05-interior-mutability.html)
+
+- `Rc<T>` enables multiple owners of the same data; `Box<T>` and `RefCell<T>` have single owners.
+- `Box<T>` allows immutable or mutable borrows checked at compile time; `Rc<T>` allows only immutable borrows checked at compile time; `RefCell<T>` allows immutable or mutable borrows checked at runtime.
+- Because `RefCell<T>` allows mutable borrows checked at runtime, you can mutate the value inside the `RefCell<T>` even when the `RefCell<T>` is immutable.
+
+## [Chapter 15.6](https://doc.rust-lang.org/stable/book/ch15-06-reference-cycles.html)
+
+Use `Rc::downgrade` to create w `Weak<T>` ref instead.
+
+To use a value of a `Weak<T>` ref use `upgrade`, getting an `Option<Rc<T>>` back.
