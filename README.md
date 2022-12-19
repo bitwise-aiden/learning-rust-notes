@@ -1231,3 +1231,125 @@ Use `Rc::strong_count` to view the current reference count of an item.
 Use `Rc::downgrade` to create w `Weak<T>` ref instead.
 
 To use a value of a `Weak<T>` ref use `upgrade`, getting an `Option<Rc<T>>` back.
+
+## [Chapter 16.1](https://doc.rust-lang.org/stable/book/ch16-01-threads.html)
+To spawn a new thread:
+``` rust
+thread::spawn(|| println!("I'm on a new thread"));
+```
+
+When the main thread completes, all spawned threads are shutdown.
+
+To force a thread to stop execution for a duration:
+``` rust
+thread::sleep(Duration::from_millis(1));
+```
+
+To wait for a thread to close:
+``` rust
+let handle: JoinHandle = thread::spawn(|| println!("I'm on a new thread"));
+
+handle.join().unwrap();
+```
+
+To give access to values inside a thread, include `move` keyword:
+``` rust
+let v = vec![1, 2, 3];
+
+let handle = thread::spawn(move || { println!("Here's a vector: {:?}", v); });
+
+handle.join.unwrap();
+```
+
+## [Chapter 16.2](https://doc.rust-lang.org/stable/book/ch16-02-message-passing.html)
+Create channels for communicating data between threads:
+``` rust
+use std::sync::mpsc;
+
+fn main() {
+    let (tx, rx) = mpsc::channel();
+
+    thread::spawn(move || {
+        let val = String::from("hi");
+        tx.send(val).unwrap();
+    });
+
+    let received = rx.recv().unwrap();
+    println!("Got: {}", received);
+}
+```
+
+When a transmitter closes, `recv` will return an error to signal no more values will be coming.
+
+`recv` blocks, `try_recv` doesn't but returns an error if no message waiting.
+
+Receiver can be treated like an iterator that will end when channel closes:
+``` rust
+for received in rx {
+    println!("Got: {}", received);
+}
+```
+
+Clone transmitter to have multiple producers:
+``` rust
+let (tx, rx) = mpsc::channel();
+
+let tx1 = tx.clone();
+thread.spawn(move || { tx1 });
+
+let tx2 = tx.clone();
+thread.spawn(move || { tx2 });
+```
+
+## [Chapter16.3](https://doc.rust-lang.org/stable/book/ch16-03-shared-state.html)
+Basic mutex usage:
+``` rust
+use std::sync::Mutex;
+
+fn main() {
+    let m = Mutex::new(5);
+
+    {
+        let mut num = m.lock().unwrap();
+        *num = 6;
+    }
+
+    println!("m = {:?}", m);
+}
+```
+
+Instead of `Rc<T>` use `Arc<T>` with threaded environments:
+``` rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+fn main() {
+    let counter = Arc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        let counter = Arc::clone(&counter);
+        let handle = thread::spawn(move || {
+            let mut num = counter.lock().unwrap();
+
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("Result: {}", *counter.lock().unwrap());
+}
+```
+
+More async types can me found in atomic docs: https://doc.rust-lang.org/stable/std/sync/atomic/index.html
+
+## [Chapter 16.4](https://doc.rust-lang.org/stable/book/ch16-04-extensible-concurrency-sync-and-send.html)
+`Send` trait indicates that ownership of values can be transferred between threads.
+
+`Sync` indicates that a type is safe for reference across multiple threads (T or &T).
+
+Don't implement traits manually, it is unsafe.
