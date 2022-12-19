@@ -876,3 +876,70 @@ mod common;
 ```
 
 Integration tests can't use from `src/main.rs`, further showing the importance of a basic main with all logic living in `src/lib.rs`.
+
+
+## [Chapter 13.1](https://doc.rust-lang.org/stable/book/ch13-01-closures.html)
+Closures infer type based on usage:
+``` rust
+let example_closure = |x| x;
+
+let s = example_closure(String::from("hello"));
+let n = example_closure(5); // <-- this is invalid
+```
+
+Closues infer reference/ownership from usage:
+``` rust
+let list = vec![1, 2, 3];
+println!("Before defining closure: {:?}", list);
+
+let only_borrows = || println!("From closure: {:?}", list);
+
+println!("Before calling closure: {:?}", list);
+only_borrows();
+println!("After calling closure: {:?}", list);
+
+let mut borrows_mutable = || list.push(7);
+
+// A println here would be invalid
+
+borrows_mutably();
+println!("After calling closure: {:?}", list);
+
+thread::spawn(move || println!("From thread: {:?}", list))
+    .join()
+    .unwrap();
+```
+
+Closures can have one of three traits:
+``` rust
+FnOnce // Typically a closure that moves captured values out of it's body
+FnMut // Doesn't move values, but might mutate captured values
+Fn // Doesn't move or mutate captured values
+```
+
+## [Chapter 13.2](https://doc.rust-lang.org/stable/book/ch13-02-iterators.html)
+
+Iterators can be created with:
+``` rust
+.iter // Immutable reference
+.into_iter // Owned varibales
+.iter_mut // Mutable reference
+```
+
+Consuming adaptors will use up an iterator meaning it can no longer be used:
+``` rust
+let v1 = vec![1, 2, 3];
+let v1_iter = v1.iter();
+
+let sum = v1_iter.sum();
+
+// Using v1_iter is invalid
+
+println!("{sum}");
+```
+
+Iterator adaptors will use up an iterator, generating a new iterator out (lazy, needs consumed):
+``` rust
+v1.iter().map(|x| x + 1); // won't consume
+v1.iter().map(|x| x + 1).collect(); // will consume
+```
