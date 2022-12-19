@@ -943,3 +943,182 @@ Iterator adaptors will use up an iterator, generating a new iterator out (lazy, 
 v1.iter().map(|x| x + 1); // won't consume
 v1.iter().map(|x| x + 1).collect(); // will consume
 ```
+
+## [Chapter 14.1](https://doc.rust-lang.org/stable/book/ch14-01-release-profiles.html)
+Add new build profiles with setting overrides to Cargo.toml:
+``` toml
+[profile.my_profile]
+opt-level = 2
+```
+
+# [Chapter 14.2](https://doc.rust-lang.org/stable/book/ch14-02-publishing-to-crates-io.html)
+Documentation comments use `///` and support markdown:
+``` rust
+/// Adds one to the number given.
+///
+/// # Examples
+///
+/// ```
+/// let arg = 5;
+/// let answer = my_crate::add_one(arg);
+///
+/// assert_eq!(6, answer);
+/// ```
+pub fn add_one(x: i32) -> i32 {
+    x + 1
+}
+```
+
+Can generate HTML docs using:
+``` sh
+cargo doc
+```
+
+Can open HTML docs using:
+``` sh
+cargo doc --open
+```
+
+Other documentation headers:
+``` rust
+/// # Panics <-- Scenarios when it could panic
+/// # Errors <-- If result returned, describe the kidns of errors and why
+/// # Safety <-- If the function is unsafe to call and why
+```
+
+Examples in documentation comments are run with `cargo test`.
+
+Commenting contained items used to comment surrounding item, e.g. root file:
+``` rust
+//! # My Crate
+//!
+//! `my_crate` is a collection of utilities to make performing certain
+//! calculations more convenient.
+```
+
+Re-export crate items to make better API using `pub use`:
+``` rust
+// How your crate implements types
+pub mod kinds {
+    pub enum PrimaryColor {
+        Red,
+        Yellow,
+        Blue,
+    }
+
+    pub enum SecondaryColor {
+        Orange,
+        Green,
+        Purple,
+    }
+}
+
+pub mod utils {
+    use crate::kinds::*;
+
+    pub fn mix(c1: PrimaryColor, c2: PrimaryColor) -> SecondaryColor {}
+}
+
+// How you expose via lib.rs
+pub use self::kinds::PrimaryColor;
+pub use self::kinds::SecondaryColor;
+pub use self::utils::mix;
+```
+
+Above can be used as:
+``` rust
+use art::mix;
+use art::PrimaryColor;
+
+fn main() {}
+```
+
+To publis crates onto crates.io you need to create an account and get an API token before:
+``` sh
+cargo login <api_key>
+```
+
+Name crate with:
+``` toml
+[package]
+name = "my_unique_name"
+```
+
+Crates require `name`, `description`, `license`.
+
+Publish crate with:
+``` sh
+cargo publish
+```
+
+Publishing a new version requires bumping the `version` of the Cargo.toml
+
+To prevent any new projects from using a deprecated version:
+``` sh
+cargo yank --vers 1.0.1
+```
+
+To undo a yank:
+```
+cargo yank --vers 1.0.1 --undo
+```
+
+## [Chapter 14.3](https://doc.rust-lang.org/stable/book/ch14-03-cargo-workspaces.html)
+Create workspaces by adding to Cargo.toml:
+``` toml
+[workspace]
+
+members = [
+    "adder",
+    "add_one",
+]
+
+Add via command with:
+``` sh
+vargo new add_one --lib
+```
+
+Directories will look like:
+``` sh
+├── Cargo.lock
+├── Cargo.toml
+├── add_one
+│   ├── Cargo.toml
+│   └── src
+│       └── lib.rs
+├── adder
+│   ├── Cargo.toml
+│   └── src
+│       └── main.rs
+└── target
+```
+
+Add workspace module as a dependency in other module's Cargo.toml:
+``` toml
+[dependencies]
+add_one = { path = "../add_one" }
+```
+
+Run specific module with:
+``` sh
+cargo run -p adder
+```
+
+Dependencies are shared between workspaces.
+
+Tests can be run for all or specific workspaces:
+``` sh
+cargo test
+cargo test -p adder
+```
+
+Workspaces need to be published individually.
+
+## [Chapter 14.4](https://doc.rust-lang.org/stable/book/ch14-04-installing-binaries.html)
+
+Install binaries with:
+``` sh
+cargo install ripgrep
+```
+
+Can only install packages with binary targets.
