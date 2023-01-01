@@ -1354,8 +1354,7 @@ More async types can me found in atomic docs: https://doc.rust-lang.org/stable/s
 
 Don't implement traits manually, it is unsafe.
 
-
-## [Chapter 17.02](https://doc.rust-lang.org/stable/book/ch17-02-trait-objects.html)
+## [Chapter 17.2](https://doc.rust-lang.org/stable/book/ch17-02-trait-objects.html)
 Define traits with:
 ``` rust
 pub trait Draw {
@@ -1387,5 +1386,234 @@ struct SelectBox {
 
 impl Draw for SelectBox {
     fn draw(&self) {}
+}
+```
+
+## [Chapter 18.1](https://doc.rust-lang.org/stable/book/ch18-01-all-the-places-for-patterns.html)
+Patterns in `match`:
+```rust
+match {
+    PATTERN => EXPRESSION
+}
+```
+
+Patterns in `if let`:
+``` rust
+if let PATTERN = EXPRESSION {
+
+}
+```
+
+Patterns in `while let`:
+``` rust
+while let PATTERN = EXPRESSION {
+
+}
+```
+
+Patterns in `let`:
+``` rust
+let PATTERN = EXPRESSION;
+```
+
+Patterns with functions:
+``` rust
+fn print_coordinates(&(x, y): &(i32, i32)) {
+    println!("Location: {x}, {y}");
+}
+
+fn main() {
+    let point = (3, 5);
+    print_coordinates(&point);
+}
+```
+
+## [Chapter 18.2](https://doc.rust-lang.org/stable/book/ch18-02-refutability.html)
+Example of irrefutable patterns:
+``` rust
+let x = 5;
+```
+
+Example of refutable patterns:
+``` rust
+if let Some(x) = some_option_value;
+```
+
+`let` and `for` only accept irrefutable patterns.
+
+`while let` and `if let` accept irrefutable and refutable patterns, but warn in the case of the former as it is intended to protect against a failure case.
+
+`match` can use either, but only one can be irrefutable.
+
+## [Chapter 18.3](https://doc.rust-lang.org/stable/book/ch18-03-pattern-syntax.html)
+Example patterns with match:
+``` rust
+let x = Some(1);
+
+match x {
+    Some(50) => println!("It was 50!"),
+    Some(x) => println!("Darn, it was {x}"),
+    None => println!("Hmph, nothing to see here"),
+}
+```
+
+Multiple and range patterns:
+``` rust
+let x = 1;
+
+match x {
+    1 | 2 => println!("one or two"),
+    3 => println!("three"),
+    4..=7 => println!("four through seven"),
+    _ => println!("anything"),
+}
+```
+
+Range patterns work with chars:
+``` rust
+let x = 'c';
+
+match x {
+    'a'..='j' => println!("Early ASCII letter"),
+    'k'..='z' => println!("Late ASCII letter"),
+    _ => println!("Something else"),
+}
+```
+
+Destructing structs:
+``` rust
+let p = Point { x: 0, y: 7 };
+
+let Point { x: a, y: b } = p;
+println!("x: {a}, y: {b}");
+
+// Short hand:
+let Point { x, y } = p;
+println!("x: {x}, y: {y}");
+```
+
+Match + destructing structs:
+``` rust
+match p {
+    Point { x, y: 0 } => println!("On the x axis at {x}"),
+    Point { x: 0, y } => println!("On the y axis at {y}"),
+    Point { x, y } => println!("On neither axis: ({x}, {y})"),
+}
+```
+
+Destructing enums:
+``` rust
+enum Color {
+    Rgb(i32, i32, i32),
+    Hsv(i32, i32, i32),
+}
+
+
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(Color),
+}
+
+let msg = Message::ChangeColor(0, 160, 255);
+
+match msg {
+    Message::Quit => println!("The Quit variant has no data to destructure."),
+    Message::Move { x, y } => println!("Move in the x direction {x} and in the y direction {y}"),
+    Message::Write(text) => println!("Text message: {text}"),
+    Message::ChangeColor(Color::Rgb(r, g, b)) => println!("Change the color to red {r}, green {g}, and blue {b}"),
+    Message::ChangeColor(Color::Hsv(h, s, v)) => println!("Change the color to hue {h}, saturation {s}, and value {v}"),
+}
+```
+
+Nestest structs and tuples:
+``` rust
+let ((feet, inches), Point { x, y }) = ((3, 10), Point { x: 3, y: -10 });
+```
+
+Ignore with `_`:
+``` rust
+fn foo(_: i32, y: i32) {
+    println!("Only care about y: {y}");
+}
+
+let x = Some(5);
+
+match x {
+    Some(_) => println!("Exists"),
+    None => println!("Doesn't exist"),
+}
+
+let numbers = (2, 4, 6, 8);
+
+match numbers {
+    (first, _, third, _) => println!("1: {first}, 3: {third}"),
+}
+```
+
+`_` on it's own doesn't bind.
+
+Using `_` to prefix variables can still cause binding:
+``` rust
+let s = Some(String::from("Hello!"));
+
+if let Some(_s) = s {
+    println!("found a string");
+}
+
+println!("{:?}", s); // <-- This is invalid
+```
+
+Ignore with `..`:
+``` rust
+let p = Point { x: 0, y: 0, z: 0 };
+
+match origin {
+    Point { x, .. } => println("x: {x}"),
+}
+
+let numbers = (2, 4, 6, 8);
+
+match numbers {
+    (first, .., last) => println!("first: {first}, last: {last}"),
+}
+
+match numbers {
+    (.., second, ..) => () // <-- this is invalid
+}
+```
+
+Match guards:
+``` rust
+let num = Some(4);
+
+match num {
+    Some(x) if x % 2 == 0 => println!("The number {} is even", x),
+    Some(x) => println!("The number {} is odd", x),
+    None => (),
+}
+
+let x = 4;
+let y = false;
+
+match x {
+    4 | 5 | 6 if y => println!("yes"),
+    _ => println!("no"),
+}
+
+```
+
+Compiler doesn't check for exhaustiveness when using match guards
+
+
+Bind variables while testing:
+``` rust
+let msg = Message::Hello { id: 5 };
+
+match msg {
+    Message::Hello { id: id_variable @ 3..=7 } => println!("Found an id in range: {id_variable}"),
+    Message::Hello { id: 10..=12 } => println!("Found an id in another range"),
+    Message::Hello { id } => println!("Found some other id: {id}"),
 }
 ```
