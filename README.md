@@ -1353,3 +1353,39 @@ More async types can me found in atomic docs: https://doc.rust-lang.org/stable/s
 `Sync` indicates that a type is safe for reference across multiple threads (T or &T).
 
 Don't implement traits manually, it is unsafe.
+
+
+## [Chapter 17.02](https://doc.rust-lang.org/stable/book/ch17-02-trait-objects.html)
+Define traits with:
+``` rust
+pub trait Draw {
+    fn draw(&self);
+}
+```
+
+Reference traits with:
+``` rust
+pub struct Screen {
+    pub components: Box<dyn Draw>,
+}
+```
+
+Generics can be used with traits for a single type that has implemented:
+``` rust
+pub struct Screen<T: Draw> {
+    pub components: Vec<T>,
+}
+```
+
+Implement traits with:
+``` rust
+struct SelectBox {
+    width: u32,
+    height: u32,
+    options: Vec<String>,
+}
+
+impl Draw for SelectBox {
+    fn draw(&self) {}
+}
+```
