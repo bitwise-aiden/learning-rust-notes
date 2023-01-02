@@ -1606,7 +1606,6 @@ match x {
 
 Compiler doesn't check for exhaustiveness when using match guards
 
-
 Bind variables while testing:
 ``` rust
 let msg = Message::Hello { id: 5 };
@@ -1616,4 +1615,404 @@ match msg {
     Message::Hello { id: 10..=12 } => println!("Found an id in another range"),
     Message::Hello { id } => println!("Found some other id: {id}"),
 }
+```
+
+## [Chapter 19.1](https://doc.rust-lang.org/stable/book/ch19-01-unsafe-rust.html)
+`unsafe` lets you:
+- Dereference a raw pointer
+- Call an unsafe function or method
+- Access or modify a mutable static variable
+- Implement an unsafe trait
+- Access fields of `union`s
+
+`unsafe` does not:
+- turn off borrow checker
+- turn off rust safety checks
+    - references will still be checked
+
+Raw pointers can be defined with:
+``` rust
+let mut x = 5;
+
+let x1 = &x as *const i32;
+let x2 = &x as *mut i32;
+```
+
+A raw pointer can be created to a known memory location with:
+``` rust
+let address = 0x012345usize;
+let r = address as *const i32;
+```
+
+Dereferencing raw pointers requires an `unsafe` block:
+``` rust
+unsafe {
+    println!("x1: {}", *x1);
+    println!("x2: {}", *x2);
+}
+```
+
+Mutable and immutable raw pointers can exist at the same time unlike Rust's reference types.
+
+Functions can be marked as `unsafe` meaning that they have to be called in an `unsafe` block:
+``` rust
+unsafe fn dangerous() {}
+
+unsafe {
+    dangerous();
+}
+```
+
+External C functions can be defined with:
+``` rust
+extern "C" {
+    fn abs(input: i32) -> i32;
+}
+
+fn main() {
+    unsafe {
+        abs(-1);
+    }
+}
+```
+
+Expose a function to an external language with:
+``` rust
+#[no_mangle]
+pub extern "C" fn call_from_c() {
+    println!("Just called a Rust function from C!");
+}
+```
+
+Static/global variables can be defined with:
+``` rust
+static SOME_GLOBAL_VARIABLE: &str = "Hello world!";
+```
+
+Accessing and modifying mutable static variables is considered unsafe:
+``` rust
+static mut COUNTER: u32 = 0;
+
+fn add_to_counter(inc: u32) {
+    unsafe {
+        COUNTER += inc;
+    }
+}
+
+fn main() {
+    add_to_counter(3);
+
+    unsafe {
+        println!("COUNTER: {COUNTER}");
+    }
+}
+```
+
+Declare an unsafe trait with:
+``` rust
+unsafe trait Foo {
+    // methods
+}
+
+unsafe impl Foo for i32 {
+    // method implementations
+}
+
+fn main() {}
+```
+
+Access union members with unsafe:
+``` rust
+#[repr(C)]
+union MyUnion {
+    f1: u32,
+    f2: f32,
+}
+
+let u = MyUnion { f1: 1 };
+
+let f = unsafe { u.f1 };
+```
+
+## [Chapter 19.3](https://doc.rust-lang.org/stable/book/ch19-03-advanced-traits.html)
+
+Associate a type to a trait with:
+``` rust
+pub trait Iterator {
+    type Item;
+
+    fn next(&mut self) -> Option<Self::Item>;
+}
+
+impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {}
+}
+```
+
+Associated types in traits are useful when you want a concrete type, opposed to Generic where you want to be able to redefine multiple types. e.g.
+``` rust
+impl Iterator<String> for Counter {}
+impl Iterator<u32> for Counter {}
+```
+
+Default value for generic type can be defined with:
+``` rust
+trait Add<Rhs=Self> {
+    type Output;
+
+    fn add(self, rhs: Rhs) -> Self::Output;
+}
+
+impl Add for Point {}
+impl Add<i32> for Point {}
+```
+
+Disambiguate which method to call with:
+``` rust
+trait Pilot {
+    fn fly(&self);
+}
+
+trait Wizard {
+    fn fly(&self);
+}
+
+struct Human;
+
+impl Pilot for Human {
+    fn fly(&self) {
+        println!("This is your captain speaking.");
+    }
+}
+
+impl Wizard for Human {
+    fn fly(&self) {
+        println!("Up!");
+    }
+}
+
+impl Human {
+    fn fly(&self) {
+        println!("*waving arms furiously*");
+    }
+}
+
+fn main() {
+    let person = Human;
+    Pilot::fly(&person);
+    Wizard::fly(&person);
+    person.fly(); // Defaults to own implemented method
+}
+```
+
+Disambiguate which associated function to call with:
+``` rust
+trait Animal {
+    fn baby_name() -> String;
+}
+
+struct Dog;
+
+impl Dog {
+    fn baby_name() -> String {
+        String::from("Spot")
+    }
+}
+
+impl Animal for Dog {
+    fn baby_name() -> String {
+        String::from("puppy")
+    }
+}
+
+fn main() {
+    println!("A baby dog is called a {}", <Dog as Animal>::baby_name());
+}
+```
+
+Specify a required trait with:
+``` rust
+use std::fmt;
+
+trait OutlinePrint: fmt::Display {
+    fn outline_print(&self) {}
+}
+
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {}
+}
+
+impl OutlinePrint for Point {}
+```
+
+Add traits to unowned type using newtype pattern with:
+``` rust
+use std::fmt;
+
+struct Wrapper(Vec<String>);
+
+impl fmt::Display for Wrapper {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]". self.0.join(", "))
+    }
+}
+
+fn main() {
+    let w = Wrapper(vec![String::from("hello"), String::from("world")]);
+    println!("w = {w}");
+}
+```
+
+## [Chapter 19.4](https://doc.rust-lang.org/stable/book/ch19-04-advanced-types.html)
+
+Never type for functions that never return:
+``` rust
+fn main() -> ! {
+
+}
+```
+
+Using dynamic sized types for generics with:
+``` rust
+fn generic<T: ?Sized>(t: &T) {}
+```
+
+## [Chapter 19.5](https://doc.rust-lang.org/stable/book/ch19-05-advanced-functions-and-closures.html)
+Functions can be passed as function pointers with:
+``` rust
+fn some_func(x: i32) -> i32 {
+    x + 1
+}
+
+fn func_caller(f: fn(i32) -> i32, arg: i32) -> i32 {
+    f(arg)
+}
+
+fn main() {
+    let result = func_caller(some_func, 10);
+
+    println!("Result: {result}");
+}
+```
+
+Return closures from functions with:
+``` rust
+fn returns_closure() -> Box<dyn Fn(i32) -> i32> {
+    Box::new(|x| x + 1)
+}
+```
+
+## [Chapter 19.6](https://doc.rust-lang.org/stable/book/ch19-06-macros.html)
+Macros are denoted with:
+``` rust
+macro_function!
+```
+
+There are three kinds of procedural macros:
+- Custom `#[derive]` macros that specify code added with the derive attribute used on structs and enums
+- Attribute-like macros that define custom attributes usable on any item
+- Function-like macros that look like function calls but operate on the tokens specified as their argument
+
+Define a macro with:
+``` rust
+macro_rules! vec {
+    ( $( $x:expr ),* ) => {
+        {
+            let mut temp_vec = Vec::new();
+            $(
+                temp_vec.push($x);
+            )*
+            temp_vec
+        }
+    };
+}
+```
+
+`macro_rules!` actls like a `match statement.
+
+Make a macro available in a crate scope with:
+``` rust
+#[macro_export]
+```
+
+Create a custom derive macro with:
+``` rust
+//
+// hello_macro crate
+//
+
+// lib.rs
+pub trait Hello {
+    fn hello();
+}
+
+//
+// hello_macro_derived crate
+//
+
+// Cargo.toml
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
+
+// lib.rs
+use proc_macro::TokenStream;
+use quote::quote;
+use syn;
+
+#[proc_macro_derive(HelloMacro)]
+pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
+    let as = syn::parse(input).unwrap();
+
+    impl_hello_macro(&ast);
+}
+
+fn impl_hello_macro(ast: &syn::DeriveInput) -> TokenStream {
+    let name = &ast.ident;
+    let gen = quote! {
+        impl Hello for #name {
+            fn hello() {
+                println!("Hello! My name is {}!", stringify!(#name));
+            }
+        }
+    };
+    gen.into()
+}
+
+//
+// Some Crate
+//
+
+// main.rs
+use hello_macro::Hello;
+use hello_macro_derive::Hello;
+
+#[derive(HelloMacro)]
+struct Pancakes;
+
+fn main() {
+    Pancakes::hello_macro();
+}
+```
+
+Create attribute macros with:
+``` rust
+#[proc_macro_attribute]
+pub fn route(attr: TokenStream, item: TokenStream) -> TokenStream {}
+
+#[route(GET, "/")]
+fn index() {}
+```
+
+Create function like macros with:
+``` rust
+#[proc_macro]
+pub fn sql(input: TokenStream) -> TokenStream {}
+
+sql!(SELECT * FROM posts WHERE id=1);
 ```
