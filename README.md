@@ -1072,10 +1072,11 @@ members = [
     "adder",
     "add_one",
 ]
+```
 
 Add via command with:
 ``` sh
-vargo new add_one --lib
+cargo new add_one --lib
 ```
 
 Directories will look like:
